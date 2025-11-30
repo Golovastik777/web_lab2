@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2048</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>2048</h1>
+            <div class="header-right">
+                <div class="score-container">
+                    <div class="score-label">Счет</div>
+                    <div class="score-value" id="score">0</div>
+                </div>
+            </div>
+        </header>
+        
+        <div class="game-info">
+            <div class="buttons-container">
+                <button id="new-game">Новая игра</button>
+                <button id="undo">Отменить</button>
+                <button id="leaderboard">Рекорды</button>
+            </div>
+        </div>
+        
+        <div class="game-container">
+            <div class="grid-container" id="grid"></div>
+        </div>
+        
+        <div class="mobile-controls">
+            <button class="up-btn" id="up">↑</button>
+            <button class="left-btn" id="left">←</button>
+            <button class="right-btn" id="right">→</button>
+            <button class="down-btn" id="down">↓</button>
+        </div>
+        
+        <div class="modal" id="game-over-modal">
+            <div class="modal-content">
+                <h2>Игра окончена!</h2>
+                <p>Ваш счет: <span id="final-score">0</span></p>
+                <div id="name-input-section">
+                    <input type="text" id="player-name" placeholder="Введите ваше имя" maxlength="20">
+                    <div class="modal-buttons">
+                        <button id="save-score">Сохранить</button>
+                        <button id="restart">Заново</button>
+                    </div>
+                </div>
+                <div id="score-saved-message">
+                    <p>Ваш рекорд сохранен!</p>
+                    <button id="close-modal">Закрыть</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="modal" id="leaderboard-modal">
+            <div class="modal-content">
+                <h2>Таблица лидеров</h2>
+                <div class="leaderboard-container">
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>Имя</th>
+                                <th>Очки</th>
+                                <th>Дата</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body"></tbody>
+                    </table>
+                </div>
+                <button id="close-leaderboard" class="close-btn">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
