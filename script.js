@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentScore = 0;
     let previousGameState = null;
     let isGameEnded = false;
+    let previousBoard = null; // Для отслеживания предыдущего состояния для анимаций
     
     const gameBoardElement = document.getElementById('grid');
     const scoreDisplay = document.getElementById('score');
@@ -50,32 +51,150 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function renderGameBoard() {
-        const tiles = document.querySelectorAll('.tile');
-        tiles.forEach(tile => {
-            tile.parentNode.removeChild(tile);
-        });
+        const cellSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-size'));
+        const cellGap = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-gap'));
         
-        for (let row = 0; row < 4; row++) {
-            for (let col = 0; col < 4; col++) {
-                const value = gameBoard[row][col];
-                if (value !== 0) {
-                    const tile = document.createElement('div');
-                    tile.className = 'tile tile-' + value;
-                    tile.textContent = value;
+        // Если нет предыдущего состояния, просто рендерим без анимации
+        if (!previousBoard) {
+            const tiles = document.querySelectorAll('.tile');
+            tiles.forEach(tile => {
+                tile.parentNode.removeChild(tile);
+            });
+            
+            for (let row = 0; row < 4; row++) {
+                for (let col = 0; col < 4; col++) {
+                    const value = gameBoard[row][col];
+                    if (value !== 0) {
+                        const tile = document.createElement('div');
+                        tile.className = 'tile tile-' + value;
+                        tile.textContent = value;
+                        tile.dataset.position = `${row}-${col}`;
+                        
+                        const x = col * (cellSize + cellGap) + cellGap;
+                        const y = row * (cellSize + cellGap) + cellGap;
+                        
+                        tile.style.left = x + 'px';
+                        tile.style.top = y + 'px';
+                        
+                        gameBoardElement.appendChild(tile);
+                    }
+                }
+            }
+        } else {
+            // Анимированный рендеринг - сравниваем старое и новое состояние
+            const existingTiles = new Map();
+            document.querySelectorAll('.tile').forEach(tile => {
+                const pos = tile.dataset.position;
+                if (pos) {
+                    existingTiles.set(pos, tile);
+                }
+            });
+            
+            // Обрабатываем каждую позицию
+            for (let row = 0; row < 4; row++) {
+                for (let col = 0; col < 4; col++) {
+                    const pos = `${row}-${col}`;
+                    const newValue = gameBoard[row][col];
+                    const oldValue = previousBoard[row][col];
+                    const newX = col * (cellSize + cellGap) + cellGap;
+                    const newY = row * (cellSize + cellGap) + cellGap;
                     
-                    const cellSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-size'));
-                    const cellGap = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-gap'));
-                    
-                    const x = col * (cellSize + cellGap) + cellGap;
-                    const y = row * (cellSize + cellGap) + cellGap;
-                    
-                    tile.style.left = x + 'px';
-                    tile.style.top = y + 'px';
-                    
-                    gameBoardElement.appendChild(tile);
+                    if (oldValue === 0 && newValue !== 0) {
+                        // Новая плитка
+                        const tile = document.createElement('div');
+                        tile.className = 'tile tile-' + newValue + ' new';
+                        tile.textContent = newValue;
+                        tile.dataset.position = pos;
+                        tile.style.left = newX + 'px';
+                        tile.style.top = newY + 'px';
+                        gameBoardElement.appendChild(tile);
+                        
+                        setTimeout(() => {
+                            tile.classList.remove('new');
+                        }, 200);
+                    } else if (oldValue !== 0 && newValue === 0) {
+                        // Плитка исчезла (слилась) - удаляем
+                        const tile = existingTiles.get(pos);
+                        if (tile) {
+                            tile.remove();
+                        }
+                    } else if (oldValue !== 0 && newValue !== 0) {
+                        const tile = existingTiles.get(pos);
+                        if (tile) {
+                            if (oldValue === newValue) {
+                                // Плитка осталась на месте - обновляем позицию
+                                tile.dataset.position = pos;
+                                tile.style.left = newX + 'px';
+                                tile.style.top = newY + 'px';
+                            } else if (newValue === oldValue * 2) {
+                                // Слияние на месте
+                                tile.classList.add('merging');
+                                tile.textContent = newValue;
+                                tile.className = 'tile tile-' + newValue + ' merging';
+                                tile.dataset.position = pos;
+                                
+                                setTimeout(() => {
+                                    tile.classList.remove('merging');
+                                }, 200);
+                            } else {
+                                // Значение изменилось (не должно происходить в нормальной игре)
+                                tile.textContent = newValue;
+                                tile.className = 'tile tile-' + newValue;
+                                tile.dataset.position = pos;
+                            }
+                        } else {
+                            // Плитка переместилась сюда - ищем её в старых позициях
+                            let found = false;
+                            for (let oldRow = 0; oldRow < 4 && !found; oldRow++) {
+                                for (let oldCol = 0; oldCol < 4 && !found; oldCol++) {
+                                    const oldPos = `${oldRow}-${oldCol}`;
+                                    if (previousBoard[oldRow][oldCol] === newValue && oldPos !== pos) {
+                                        const oldTile = existingTiles.get(oldPos);
+                                        if (oldTile) {
+                                            // Анимируем перемещение
+                                            const oldX = oldCol * (cellSize + cellGap) + cellGap;
+                                            const oldY = oldRow * (cellSize + cellGap) + cellGap;
+                                            
+                                            oldTile.style.left = oldX + 'px';
+                                            oldTile.style.top = oldY + 'px';
+                                            oldTile.classList.add('moving');
+                                            oldTile.dataset.position = pos;
+                                            
+                                            oldTile.offsetHeight; // reflow
+                                            
+                                            requestAnimationFrame(() => {
+                                                oldTile.style.left = newX + 'px';
+                                                oldTile.style.top = newY + 'px';
+                                                
+                                                setTimeout(() => {
+                                                    oldTile.classList.remove('moving');
+                                                }, 150);
+                                            });
+                                            
+                                            found = true;
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            if (!found) {
+                                // Создаем новую плитку
+                                const tile = document.createElement('div');
+                                tile.className = 'tile tile-' + newValue;
+                                tile.textContent = newValue;
+                                tile.dataset.position = pos;
+                                tile.style.left = newX + 'px';
+                                tile.style.top = newY + 'px';
+                                gameBoardElement.appendChild(tile);
+                            }
+                        }
+                    }
                 }
             }
         }
+        
+        // Сохраняем текущее состояние для следующей анимации
+        previousBoard = JSON.parse(JSON.stringify(gameBoard));
         
         scoreDisplay.textContent = currentScore;
     }
@@ -127,6 +246,9 @@ document.addEventListener('DOMContentLoaded', () => {
             gameBoard: JSON.parse(JSON.stringify(gameBoard)),
             currentScore: currentScore
         };
+        
+        // Сохраняем предыдущее состояние для анимации
+        previousBoard = JSON.parse(JSON.stringify(gameBoard));
         
         let hasMoved = false;
         
@@ -185,6 +307,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 isGameEnded = true;
                 showGameEndModal();
             }
+        } else {
+            renderGameBoard();
         }
         
         return hasMoved;
@@ -296,6 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
             gameBoard = previousGameState.gameBoard;
             currentScore = previousGameState.currentScore;
             previousGameState = null;
+            previousBoard = null;
             renderGameBoard();
             saveCurrentGame();
         }
@@ -305,6 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
         gameBoard = Array(4).fill().map(() => Array(4).fill(0));
         currentScore = 0;
         previousGameState = null;
+        previousBoard = null;
         isGameEnded = false;
         
         generateNewTile();

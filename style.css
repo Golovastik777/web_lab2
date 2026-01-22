@@ -141,9 +141,22 @@ button:hover {
     border-radius: var(--border-radius);
     background-color: #7f8c8d;
     color: var(--secondary-color);
-    transition: all 0.15s ease-in-out;
+    transition: transform 0.15s ease-in-out, left 0.15s ease-in-out, top 0.15s ease-in-out;
     z-index: 10;
     user-select: none;
+}
+
+.tile.moving {
+    z-index: 20;
+}
+
+.tile.merging {
+    z-index: 30;
+    animation: merge 0.2s ease-in-out;
+}
+
+.tile.new {
+    animation: appear 0.2s ease-in-out;
 }
 
 .tile-2 { background-color: #3498db; }
@@ -291,8 +304,29 @@ button:hover {
 }
 
 @keyframes appear {
-    0% { transform: scale(0); }
-    100% { transform: scale(1); }
+    0% { 
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% { 
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes merge {
+    0% { 
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% { 
+        transform: scale(1);
+    }
 }
 
 /* Остальные медиа-запросы остаются без изменений */
